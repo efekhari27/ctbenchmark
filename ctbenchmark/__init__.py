@@ -10,9 +10,13 @@ from .CentralTendencyPeakProblem import CentralTendencyPeakProblem
 from .CentralTendencyGaussianPeakProblem2M import CentralTendencyGaussianPeakProblem2M
 from .CentralTendencyGaussianPeakProblem2N import CentralTendencyGaussianPeakProblem2N
 from .CentralTendencyGaussianPeakProblem5N import CentralTendencyGaussianPeakProblem5N
+from .CentralTendencyGaussianPeakProblem10N import CentralTendencyGaussianPeakProblem10N
+from .CentralTendencyGaussianMixture import CentralTendencyGaussianMixture
+
 
 from .DesignOfExperiments import DesignOfExperiments
 from .AKDA import AKDA
+from .aMSE import aMSE
 from .plotools import *
 
 
@@ -29,8 +33,11 @@ __all__ = [
     "CentralTendencyGaussianPeakProblem2M",
     "CentralTendencyGaussianPeakProblem2N",
     "CentralTendencyGaussianPeakProblem5N",
+    "CentralTendencyGaussianPeakProblem10N",
+    "CentralTendencyGaussianMixture",
     "DesignOfExperiments",
     "AKDA", 
+    "aMSE",
     "plotools"
 ]
-__version__ = "1.0"
+__version__ = "1.2"

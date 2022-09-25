@@ -25,13 +25,13 @@ class DrawFunctions:
         self.nodes = mesh.getVertices()
         self.X0, self.X1 = np.array(self.nodes).T.reshape(2, self.grid_size, self.grid_size)
 
-    def draw_2D_controur(self, title, function=None, distribution=None, colorbar=cm.coolwarm):
+    def draw_2D_controur(self, title, function=None, distribution=None, colorbar=cm.coolwarm, nb_isocurves=8, contour_values=True):
         fig = plt.figure(figsize=(7, 6))
         if distribution is not None:
             Zpdf = np.array(distribution.computePDF(self.nodes)).reshape(self.grid_size, self.grid_size)
-            nb_isocurves = 8
             contours = plt.contour(self.X0, self.X1, Zpdf, nb_isocurves, colors='black', alpha=0.6)
-            plt.clabel(contours, inline=True, fontsize=8)
+            if contour_values:
+                plt.clabel(contours, inline=True, fontsize=8)
         if function is not None:
             Z = np.array(function(self.nodes)).reshape(self.grid_size, self.grid_size)
             plt.contourf(self.X0, self.X1, Z, 20, cmap=colorbar)
