@@ -34,3 +34,6 @@ ctbenchmark/*__pycache__/
 #Jupyter notebook data
 *.ipynb_checkpoints
 
+build/*
+ctbenchmark.egg-info/*
+dist/*
