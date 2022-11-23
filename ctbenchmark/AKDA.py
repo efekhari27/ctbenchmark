@@ -39,6 +39,7 @@ class AKDA:
         self,
         kernel=None,
         distribution=None,
+        candidate_set=None,
         candidate_set_size=None,
         initial_design=None,
         initial_observations = None
@@ -56,14 +57,18 @@ class AKDA:
             self._set_kernel(kernel)
 
         # Candidate set
-        if candidate_set_size is None:
-            candidate_set_size = 2 ** 12
+        if candidate_set is not None: 
+            self._candidate_set = ot.Sample(candidate_set)
+            candidate_set_size = len(candidate_set)
+        else :
+            if candidate_set_size is None:
+                candidate_set_size = 2 ** 12
 
-        sobol = ot.LowDiscrepancyExperiment(
-            ot.SobolSequence(), distribution, candidate_set_size, True
-        )
-        sobol.setRandomize(False)
-        self._candidate_set = sobol.generate()
+            sobol = ot.LowDiscrepancyExperiment(
+                ot.SobolSequence(), distribution, candidate_set_size, True
+            )
+            sobol.setRandomize(False)
+            self._candidate_set = sobol.generate()
 
         # Initial design
         self._design_indices = list(

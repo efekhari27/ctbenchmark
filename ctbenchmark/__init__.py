@@ -4,6 +4,7 @@ from .CentralTendencyProblem22 import CentralTendencyProblem22
 from .CentralTendencyIrregularProblem import CentralTendencyIrregularProblem
 from .CentralTendencyBraninProblem import CentralTendencyBraninProblem
 from .CentralTendencyGSobolProblem import CentralTendencyGSobolProblem
+from .CentralTendencyGSobolProblem10N import CentralTendencyGSobolProblem10N
 from .CentralTendencyBenchmark import CentralTendencyBenchmark
 from .CentralTendencyCosin2Problem import CentralTendencyCosin2Problem
 from .CentralTendencyPeakProblem import CentralTendencyPeakProblem
@@ -26,6 +27,7 @@ __all__ = [
     "CentralTendencyIrregularProblem", 
     "CentralTendencyBraninProblem", 
     "CentralTendencyGSobolProblem",
+    "CentralTendencyGSobolProblem10N",
     "CentralTendencyBenchmark",
     "DrawFunctions",
     "CentralTendencyCosin2Problem",

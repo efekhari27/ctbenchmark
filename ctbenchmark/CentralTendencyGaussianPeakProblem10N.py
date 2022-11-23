@@ -37,7 +37,7 @@ class CentralTendencyGaussianPeakProblem10N(CentralTendencyBenchmarkProblem):
         )
 
         name = "Gaussian Peak 10D (normal input)"
-        # References computed by a very large Sobol sample (size 10**8)
+        # References computed by a very large MC sample (size 10**8)
         mean = 0.44684171199013906
         std = 0.7155066113804083
 
