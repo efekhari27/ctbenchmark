@@ -22,7 +22,7 @@ ot.Log.Show(ot.Log.NONE)
 
 class CentralTendencyBenchmark:
     """Class to define a central tendency benchmark"""
-    def __init__(self, methods=['QMC', 'Matérn 5/2','Energy-distance'], sizes=[10, 20, 50, 100, 500]):
+    def __init__(self, methods=['QMC', 'Matérn $5/2$','Energy-distance'], sizes=[10, 20, 50, 100, 500]):
         self.methods = methods
         self.sizes = sizes
         self.mc_ref_size = 10 ** 6
@@ -38,7 +38,7 @@ class CentralTendencyBenchmark:
 
     def empty_ct_df(self, problem_name, method):
         muti_index = pd.MultiIndex.from_product([[problem_name], [method], self.sizes], names=self.level_names)
-        df_ct_benchmark = pd.DataFrame([], index=muti_index, columns=['mu', 'm', 'm*', 'MMD', 'weights sum'])
+        df_ct_benchmark = pd.DataFrame([], index=muti_index, columns=['mu', 'm', 'm*', 'std*', 'MMD', 'MMD*', 'weights sum'], dtype='float64')
         return df_ct_benchmark
 
     def generate_sample(self, method, size, distribution, candidate_points, problem_function=None):
@@ -53,13 +53,13 @@ class CentralTendencyBenchmark:
                 seq1 = ot.SobolSequence(dim)
                 sobol_experiment1 = ot.LowDiscrepancyExperiment(seq1, distribution, size, False)
                 x_sample = sobol_experiment1.generate()
-            elif method == 'Matérn':
+            elif method == 'Matérn $5/2$':
                 #scale = 1 / (size ** (1 / dim))
                 self.set_kernel(dim)
                 # Kernel herding design
                 kh = otkd.KernelHerding(kernel=self.kernel, distribution=distribution, candidate_set=candidate_points)
                 x_sample = kh.select_design(size)
-            elif method == 'Gaussian': 
+            elif method == 'Squared exponential': 
                 kernel = ot.SquaredExponential([self.scale_coefficient] * dim)
                 # Kernel herding design
                 kh = otkd.KernelHerding(kernel=kernel, distribution=distribution, candidate_set=candidate_points)
@@ -85,7 +85,7 @@ class CentralTendencyBenchmark:
                 initial_design.add(amse_sample)
                 x_sample = initial_design
             else :
-                raise ValueError('The specified methods do not match the possible list ["monte carlo", "QMC", "Matérn 5/2","Energy-distance"]')
+                raise ValueError('The specified methods do not match the possible list ["monte carlo", "QMC", "Matérn $5/2$","Energy-distance"]')
             return x_sample
 
     def run_method(self, random_problem, method):
@@ -96,7 +96,7 @@ class CentralTendencyBenchmark:
         df_ct_benchmark = self.empty_ct_df(problem_name, method)
         df_ct_benchmark['mu'] = random_problem.getMean()
         self.set_kernel(distribution.getDimension())
-        bqm = otkd.BayesianQuadratureWeighting(kernel=self.kernel, distribution_sample=self.candidate_set)
+        bqm = otkd.BayesianQuadrature(kernel=self.kernel, distribution_sample=self.candidate_set)
         if method in ['monte carlo', 'QMC']:
             # Generate sample of the max(sizes)
             full_x_sample = self.generate_sample(method, max(self.sizes), distribution, candidate_points=None)
@@ -112,15 +112,15 @@ class CentralTendencyBenchmark:
             mean = np.mean(y_sample)
             x_sample = full_x_sample[:size]
             weights = bqm.compute_bayesian_quadrature_weights(x_sample)
-            # Zero mean hypothesis
-            #meanw = np.squeeze(y_sample) @ weights
             # Constant basis hypothesis
-            meanw = mean + np.squeeze(y_sample - mean) @ weights
+            meanw = bqm.compute_bayesian_quadrature_mean(x_sample, y_sample, trend='constant')
+            stdw = np.sqrt(bqm.compute_bayesian_quadrature_variance(x_sample, trend='constant'))
+            # MMD computation
             mmd_object = otkd.KernelHerding(kernel=self.kernel, candidate_set=self.candidate_set)
             x_sample_indices = mmd_object.get_indices(x_sample)
             mmd = mmd_object.compute_mmd(x_sample_indices)
-            #df_ct_benchmark.loc[(problem_name, method, int(size)), ['m', 'm*', 'weights sum']] = mean, meanw, np.sum(weights)
-            df_ct_benchmark.loc[(problem_name, method, size), ['m', 'm*', 'MMD', 'weights sum']] = mean, meanw, mmd, np.sum(weights)
+            mmdw = mmd_object._compute_weighted_mmd(x_sample_indices, weights)
+            df_ct_benchmark.loc[(problem_name, method, size), ['m', 'm*', 'std*', 'MMD', 'MMD*', 'weights sum']] = mean, meanw, stdw, mmd, mmdw, np.sum(weights)
         print('DONE: problem=' + problem_name + ' | method=' + method)
         return df_ct_benchmark
 
@@ -136,6 +136,7 @@ class CentralTendencyBenchmark:
 
 ######################################
     def plot_ct_benchmark(self, df_benchmark, function_label, methods=['QMC','Energy-distance'], is_MMD=False, save_file=None):
+        wcolors = ['sienna', 'darkgreen', 'darkred']
         df_benchmark = df_benchmark.reset_index()
         markers = "XD^ov."
         fig = plt.figure(figsize=(8, 5))
@@ -147,14 +148,20 @@ class CentralTendencyBenchmark:
                 mu_ref = df['mu'].tolist()[0]
                 idx = methods.index(method)
                 if is_MMD and method=='QMC':
-                    plt.plot(df["Size"], df["MMD"], marker=markers[idx], label=method, color='C7', zorder=2)
+                    plt.plot(df["Size"], df["MMD"], label=method, color='C7', zorder=2)
+                    plt.plot(df["Size"], df["MMD*"], linestyle='dashed', label=method + ' weighted', color='C7', linewidth=2)
                 elif is_MMD:
                     plt.plot(df["Size"], df["MMD"], marker=markers[idx], label=method, color='C'+str(idx), zorder=2)
+                    plt.plot(df["Size"], df["MMD*"], marker=markers[idx], linestyle='dashed', label=method + ' weighted', color=wcolors[idx-1])
                 elif method=='QMC':
-                    plt.plot(df["Size"], df["m"], marker=markers[idx], label=method, color='C7', zorder=2)            
+                    plt.plot(df["Size"], df["m"], label=method, color='C7', zorder=2)
+                    plt.plot(df["Size"], df["m*"], linestyle='dashed', label=method + ' weighted', color='C7', linewidth=2)            
                 else:
                     plt.plot(df["Size"], df["m"], marker=markers[idx], label=method, color='C'+str(idx), zorder=2)
-                    plt.plot(df["Size"], df["m*"], marker=markers[idx], linestyle='dashed', label=method + ' weighted', color='C' + str(idx))
+                    plt.plot(df["Size"], df["m*"], marker=markers[idx], linestyle='dashed', label=method + ' weighted', color=wcolors[idx-1])
+                    #lower_ci = np.array(df["m*"] - 1.96 * df["std*"])
+                    #upper_ci = np.array(df["m*"] + 1.96 * df["std*"])
+                    #plt.fill_between(df["Size"].values, lower_ci, upper_ci, label="Bayesian quadrature CI 95\%", alpha=0.3, color='C' + str(idx))
             except:
                 pass
         #plt.scatter(df["Size"].max() + 1000, df['mu'].tolist()[0], marker='D', color='k')
@@ -170,7 +177,7 @@ class CentralTendencyBenchmark:
         plt.grid(which='both')
         plt.xlabel('$n$ (log scale)')
         plt.xscale('log')
-        legend = plt.legend(bbox_to_anchor=(0.5, -0.12), loc='upper center', ncol=3, columnspacing=1.2)
+        legend = plt.legend(bbox_to_anchor=(0.5, -0.12), loc='upper center', ncol=2, columnspacing=1.2)
         if save_file is not None:
             fig.savefig(save_file, bbox_extra_artists=(legend,), bbox_inches='tight')
         return fig
@@ -245,5 +252,5 @@ if __name__=="__main__":
     candidate_points = doe_generator.generate_sample('QMC', 2**12, peak_dist, None)
 
     x_bench_sizes = list(range(5, 100, 5)) + list(range(100, 550, 50))
-    bench = ctb.CentralTendencyBenchmark(['QMC', 'Matérn 5/2'], x_bench_sizes)
+    bench = ctb.CentralTendencyBenchmark(['QMC', 'Matérn $5/2$'], x_bench_sizes)
     df_benchmark = bench.run_benchmark([peak_problem], candidate_points)

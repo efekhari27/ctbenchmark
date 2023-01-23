@@ -26,7 +26,7 @@ class DrawFunctions:
         self.X0, self.X1 = np.array(self.nodes).T.reshape(2, self.grid_size, self.grid_size)
 
     def draw_2D_controur(self, title, function=None, distribution=None, colorbar=cm.coolwarm, nb_isocurves=8, contour_values=True):
-        fig = plt.figure(figsize=(7, 6))
+        fig = plt.figure(figsize=(5, 4))
         if distribution is not None:
             Zpdf = np.array(distribution.computePDF(self.nodes)).reshape(self.grid_size, self.grid_size)
             contours = plt.contour(self.X0, self.X1, Zpdf, nb_isocurves, colors='black', alpha=0.6)
